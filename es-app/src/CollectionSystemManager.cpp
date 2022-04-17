@@ -27,10 +27,10 @@ CollectionSystemManager::CollectionSystemManager(Window* window) : mWindow(windo
 {
 	CollectionSystemDecl systemDecls[] = {
 		//type                  name            long name            //default sort              // theme folder            // isCustom
-		{ AUTO_ALL_GAMES,       "all",          "all games",         "filename, ascending",      "auto-allgames",           false },
-		{ AUTO_LAST_PLAYED,     "recent",       "last played",       "last played, descending",  "auto-lastplayed",         false },
-		{ AUTO_FAVORITES,       "favorites",    "favorites",         "filename, ascending",      "auto-favorites",          false },
-		{ CUSTOM_COLLECTION,    myCollectionsName,  "collections",    "filename, ascending",      "custom-collections",      true }
+		{ AUTO_ALL_GAMES,       N_("all"),          _("all games"),         _("filename, ascending"),      "auto-allgames",           false },
+		{ AUTO_LAST_PLAYED,     N_("recent"),       _("last played"),       _("last played, descending"),  "auto-lastplayed",         false },
+		{ AUTO_FAVORITES,       N_("favorites"),    _("favorites"),         _("filename, ascending"),      "auto-favorites",          false },
+		{ CUSTOM_COLLECTION,    myCollectionsName,  _("collections"),    _("filename, ascending"),      "custom-collections",      true }
 	};
 
 	// create a map
@@ -56,7 +56,7 @@ CollectionSystemManager::CollectionSystemManager(Window* window) : mWindow(windo
 		Utils::FileSystem::createDirectory(path);
 
 	mIsEditingCustom = false;
-	mEditingCollection = "Favorites";
+	mEditingCollection = _("Favorites");
 	mEditingCollectionSystemData = NULL;
 	mCustomCollectionsBundle = NULL;
 }
@@ -441,16 +441,20 @@ void CollectionSystemManager::setEditMode(std::string collectionName)
 	// if it's bundled, this needs to be the bundle system
 	mEditingCollectionSystemData = sysData;
 
-	GuiInfoPopup* s = new GuiInfoPopup(mWindow, "Editing the '" + Utils::String::toUpper(collectionName) + "' Collection. Add/remove games with Y.", 10000);
+	std::string popup = (boost::locale::format(_("Editing the '{1}' Collection. Add/remove games with Y."))
+			    % Utils::String::toUpper(collectionName)).str();
+	GuiInfoPopup* s = new GuiInfoPopup(mWindow, popup, 10000);
 	mWindow->setInfoPopup(s);
 }
 
 void CollectionSystemManager::exitEditMode()
 {
-	GuiInfoPopup* s = new GuiInfoPopup(mWindow, "Finished editing the '" + mEditingCollection + "' Collection.", 4000);
+	std::string popup = (boost::locale::format(_("Finished editing the '{1}' Collection."))
+			    % mEditingCollection).str();
+	GuiInfoPopup* s = new GuiInfoPopup(mWindow, popup, 4000);
 	mWindow->setInfoPopup(s);
 	mIsEditingCustom = false;
-	mEditingCollection = "Favorites";
+	mEditingCollection = _("Favorites");
 
 	mEditingCollectionSystemData->system->onMetaDataSavePoint();
 }
@@ -537,14 +541,14 @@ bool CollectionSystemManager::toggleGameInCollection(FileData* file, int pressco
 
 			refreshCollectionSystems(file->getSourceFileData());
 		}
+		std::string message;
 		if (adding)
-		{
-			s = new GuiInfoPopup(mWindow, "Added '" + Utils::String::removeParenthesis(name) + "' to '" + Utils::String::toUpper(sysName) + "'", 4000);
-		}
+			message = (boost::locale::format(_("Added '{1}' to '{2}'"))
+			    % Utils::String::removeParenthesis(name) % Utils::String::toUpper(sysName)).str();
 		else
-		{
-			s = new GuiInfoPopup(mWindow, "Removed '" + Utils::String::removeParenthesis(name) + "' from '" + Utils::String::toUpper(sysName) + "'", 4000);
-		}
+			message = (boost::locale::format(_("Removed '{1}' from '{2}'"))
+			    % Utils::String::removeParenthesis(name) % Utils::String::toUpper(sysName)).str();
+		s = new GuiInfoPopup(mWindow, message, 4000);
 		mWindow->setInfoPopup(s);
 		return true;
 	}

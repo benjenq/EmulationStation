@@ -9,6 +9,7 @@
 #include "InputConfig.h"
 #include <functional>
 #include <memory>
+#include "Locale.h"
 
 class Animation;
 class AnimationController;
