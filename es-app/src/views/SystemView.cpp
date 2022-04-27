@@ -260,7 +260,7 @@ void SystemView::onCursorChanged(const CursorState& /*state*/)
 		if (!getSelected()->isGameSystem())
 			ss << _("CONFIGURATION");
 		else
-			ss << gameCount << _(" GAME") << (gameCount == 1 ? "" : _("S")) << _(" AVAILABLE");
+			ss << boost::locale::format(ngettext("{1} GAME AVAILABLE", "{1} GAMES AVAILABLE", gameCount)) % gameCount;
 
 		mSystemInfo.setText(ss.str());
 	}, false, 1);

@@ -103,7 +103,8 @@ void GuiScraperMulti::doNextSearch()
 
 	// update subtitle
 	ss.str(""); // clear
-	ss << _("GAME ") << (mCurrentGame + 1) << _(" OF ") << mTotalGames << " - " << Utils::String::toUpper(Utils::FileSystem::getFileName(mSearchQueue.front().game->getPath()));
+	ss << boost::locale::format(_("GAME {1} OF {2}")) % (mCurrentGame + 1) % mTotalGames;
+	ss << " - " << Utils::String::toUpper(Utils::FileSystem::getFileName(mSearchQueue.front().game->getPath()));
 	mSubtitle->setText(ss.str());
 
 	mSearchComp->search(mSearchQueue.front());
@@ -137,10 +138,11 @@ void GuiScraperMulti::finish()
 	{
 		ss << _("NO GAMES WERE SCRAPED.");
 	}else{
-		ss << mTotalSuccessful << _(" GAME") << ((mTotalSuccessful > 1) ? _("S") : "") << _(" SUCCESSFULLY SCRAPED!");
+	  	ss << boost::locale::format(ngettext("{1} GAME SUCCESSFULLY SCRAPED!", "{1} GAMES SUCCESSFULLY SCRAPED!", mTotalSuccessful)) % mTotalSuccessful;
 
-		if(mTotalSkipped > 0)
-			ss << "\n" << mTotalSkipped << _(" GAME") << ((mTotalSkipped > 1) ? _("S") : "") << _(" SKIPPED.");
+		if(mTotalSkipped > 0) {
+			ss << "\n" << boost::locale::format(ngettext("{1} GAME SKIPPED.", "{1} GAMES SKIPPED.", mTotalSkipped)) % mTotalSkipped;
+		}
 	}
 
 	mWindow->pushGui(new GuiMsgBox(mWindow, ss.str(),

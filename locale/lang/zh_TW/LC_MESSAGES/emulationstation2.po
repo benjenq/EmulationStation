@@ -575,8 +575,8 @@ msgstr "系統設定"
 
 msgid "{1} GAME AVAILABLE"
 msgid_plural "{1} GAMES AVAILABLE"
-msgstr[0] "{1} 個遊戲可遊玩"
-msgstr[1] "{1} 個遊戲可遊玩"
+msgstr[0] "{1} 個遊戲"
+msgstr[1] "{1} 個遊戲"
 
 msgid "GAME "
 msgstr "遊戲 "
@@ -1303,15 +1303,15 @@ msgid "stop (progress saved)"
 msgstr "停止（進度保存）"
 
 msgid "GAME {1} OF {2}"
-msgstr "遊戲 {1} 到 {2}"
+msgstr "第 {1} 個 / 全部 {2} 個遊戲"
 
 msgid "NO GAMES WERE SCRAPED."
 msgstr "沒有任何遊戲被抓取"
 
 msgid "{1} GAME SUCCESSFULLY SCRAPED!"
 msgid_plural "{1} GAMES SUCCESSFULLY SCRAPED!"
-msgstr[0] "{1} 遊戲成功抓取!"
-msgstr[1] "{1} 遊戲成功抓取!"
+msgstr[0] "{1} 個遊戲成功抓取!"
+msgstr[1] "{1} 個遊戲成功抓取!"
 
 msgid " SUCCESSFULLY SCRAPED!"
 msgstr "抓取成功!"
@@ -1417,8 +1417,8 @@ msgstr "歡迎"
 
 msgid "{1} GAMEPAD DETECTED"
 msgid_plural "{1} GAMEPADS DETECTED"
-msgstr[0] "偵測到 {1} 遊戲手把"
-msgstr[1] "偵測到 {1} 遊戲手把"
+msgstr[0] "偵測到 {1} 支遊戲手把"
+msgstr[1] "偵測到 {1} 支遊戲手把"
 
 msgid " DETECTED"
 msgstr "偵測到"

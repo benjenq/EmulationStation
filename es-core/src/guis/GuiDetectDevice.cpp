@@ -30,7 +30,7 @@ GuiDetectDevice::GuiDetectDevice(Window* window, bool firstRun, const std::funct
 	int numDevices = InputManager::getInstance()->getNumJoysticks();
 
 	if(numDevices > 0)
-		deviceInfo << numDevices << _(" GAMEPAD") << (numDevices > 1 ? _("S") : "") << _(" DETECTED");
+		deviceInfo << (boost::locale::format(ngettext("{1} GAMEPAD DETECTED", "{1} GAMEPADS DETECTED", numDevices)) % numDevices).str();
 	else
 		deviceInfo << _("NO GAMEPADS DETECTED");
 	mDeviceInfo = std::make_shared<TextComponent>(mWindow, deviceInfo.str(), Font::get(FONT_SIZE_SMALL), 0x999999FF, ALIGN_CENTER);
