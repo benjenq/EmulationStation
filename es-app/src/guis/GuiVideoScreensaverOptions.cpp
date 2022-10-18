@@ -23,7 +23,7 @@ GuiVideoScreensaverOptions::GuiVideoScreensaverOptions(Window* window, const cha
 	addWithLabel(_("STRETCH VIDEO ON SCREENSAVER"), stretch_screensaver);
 	addSaveFunc([stretch_screensaver] { Settings::getInstance()->setBool("StretchVideoOnScreenSaver", stretch_screensaver->getState()); });
 
-#ifdef _RPI_
+#ifdef _OMX_
 	auto ss_omx = std::make_shared<SwitchComponent>(mWindow);
 	ss_omx->setState(Settings::getInstance()->getBool("ScreenSaverOmxPlayer"));
 	addWithLabel(_("USE OMX PLAYER FOR SCREENSAVER"), ss_omx);
@@ -47,7 +47,7 @@ GuiVideoScreensaverOptions::GuiVideoScreensaverOptions(Window* window, const cha
 	addSaveFunc([ss_video_mute] { Settings::getInstance()->setBool("ScreenSaverVideoMute", ss_video_mute->getState()); });
 
 
-	auto ss_vlc_resolution = std::make_shared< OptionListComponent<std::string> >(mWindow, _("VLC: SCREENSAVER VIDEO RESOLUTION"), false);
+	auto ss_vlc_resolution = std::make_shared< OptionListComponent<std::string> >(mWindow, _("VIDEO RESOLUTION"), false);
 	std::vector<std::string> vlc_res;
 	vlc_res.push_back(N_("original")); // renders at original video resolution, stretched to fit screen
 	vlc_res.push_back(N_("low")); // 25% of screen resolution
@@ -59,7 +59,7 @@ GuiVideoScreensaverOptions::GuiVideoScreensaverOptions(Window* window, const cha
 	addWithLabel(_("VLC: SCREENSAVER VIDEO RESOLUTION"), ss_vlc_resolution);
 	addSaveFunc([ss_vlc_resolution, this] { Settings::getInstance()->setString("VlcScreenSaverResolution", ss_vlc_resolution->getSelected()); });
 
-#ifdef _RPI_
+#ifdef _OMX_
 	ComponentListRow row;
 
 	// Set subtitle position
@@ -103,12 +103,12 @@ GuiVideoScreensaverOptions::~GuiVideoScreensaverOptions()
 
 void GuiVideoScreensaverOptions::save()
 {
-#ifdef _RPI_
+#ifdef _OMX_
 	bool startingStatusNotRisky = (Settings::getInstance()->getString("ScreenSaverGameInfo") == "never" || !Settings::getInstance()->getBool("ScreenSaverOmxPlayer"));
 #endif
 	GuiScreensaverOptions::save();
 
-#ifdef _RPI_
+#ifdef _OMX_
 	bool endStatusRisky = (Settings::getInstance()->getString("ScreenSaverGameInfo") != "never" && Settings::getInstance()->getBool("ScreenSaverOmxPlayer"));
 	if (startingStatusNotRisky && endStatusRisky) {
 		// if before it wasn't risky but now there's a risk of problems, show warning

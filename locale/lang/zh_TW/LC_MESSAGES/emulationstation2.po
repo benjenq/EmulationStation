@@ -1157,6 +1157,9 @@ msgstr "在螢幕保護程式上延展影片"
 msgid "VLC: SCREENSAVER VIDEO RESOLUTION"
 msgstr "VLC: 螢幕保護時影片解析度"
 
+msgid "VIDEO RESOLUTION"
+msgstr "影片解析度"
+
 msgid "left"
 msgstr "靠左"
 

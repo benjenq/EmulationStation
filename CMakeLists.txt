@@ -2,13 +2,17 @@ cmake_minimum_required(VERSION 2.8)
 
 option(GLES "Set to ON if targeting Embedded OpenGL" ${GLES})
 option(GL "Set to ON if targeting Desktop OpenGL" ${GL})
-option(RPI "Set to ON to enable the Raspberry PI video player (omxplayer) and audio options" ${RPI})
+option(RPI "Set to ON to enable the Raspberry PI memory and audio options" ${RPI})
+option(OMX "Set to On to enable OMXPlayer for video snapshots" ${OMX})
 option(CEC "Set to ON to enable CEC" ${CEC})
 option(PROFILING "Set to ON to enable profiling" ${PROFILING})
 
 # GLES implementation overrides
 option(USE_MESA_GLES "Set to ON to select the MESA OpenGL ES driver" ${USE_MESA_GLES})
 option(USE_GLES1 "Set to ON to force usage of the OpenGLES v1 renderer" ${USE_GLES1})
+
+# GL implementation overrides
+option(USE_GL21 "Set to ON to force usage of the OpenGL v2.1 renderer" ${USE_GL21})
 
 # OpenGL library preference (https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
 # Set it to OLD to appease older proprietary drivers without libglvnd support
@@ -72,7 +76,11 @@ set_property(CACHE GLSystem PROPERTY STRINGS "Desktop OpenGL" "Embedded OpenGL")
 
 if(${GLSystem} MATCHES "Desktop OpenGL")
     find_package(OpenGL REQUIRED)
-    add_definitions(-DUSE_OPENGL_14)
+    if(NOT USE_GL21)
+        add_definitions(-DUSE_OPENGL_14)
+    else()
+        add_definitions(-DUSE_OPENGL_21)
+    endif()
 else()
     if(NOT USE_GLES1)
         find_package(OpenGLES2 QUIET REQUIRED)
@@ -109,6 +117,10 @@ endif()
 #set up compiler flags and excutable names
 if(DEFINED BCMHOST OR RPI)
     add_definitions(-D_RPI_)
+endif()
+
+if(OMX)
+    add_definitions(-D_OMX_)
 endif()
 
 if(DEFINED libCEC_FOUND)
@@ -160,8 +172,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
 set(COMMON_INCLUDE_DIRS
     ${FREETYPE_INCLUDE_DIRS}
     ${FreeImage_INCLUDE_DIRS}
-    ${SDL2_INCLUDE_DIR}
-    ${Boost_INCLUDE_DIRS}
+    ${SDL2_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIR}
     ${VLC_INCLUDE_DIR}
     ${RAPIDJSON_INCLUDE_DIRS}
@@ -200,7 +211,7 @@ set(COMMON_LIBRARIES
     ${Boost_LIBRARIES}
     ${FREETYPE_LIBRARIES}
     ${FreeImage_LIBRARIES}
-    ${SDL2_LIBRARY}
+    ${SDL2_LIBRARIES}
     ${CURL_LIBRARIES}
     ${VLC_LIBRARIES}
     pugixml
