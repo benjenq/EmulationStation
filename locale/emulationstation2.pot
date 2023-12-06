@@ -559,9 +559,6 @@ msgstr ""
 msgid "video"
 msgstr ""
 
-msgid "VIDEO RESOLUTION"
-msgstr ""
-
 msgid "grid"
 msgstr ""
 
