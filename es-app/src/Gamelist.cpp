@@ -8,7 +8,7 @@
 #include "Log.h"
 #include "Settings.h"
 #include "SystemData.h"
-#include <pugixml/src/pugixml.hpp>
+#include <pugixml.hpp>
 
 FileData* findOrCreateFile(SystemData* system, const std::string& path, FileType type)
 {
@@ -85,6 +85,7 @@ void parseGamelist(SystemData* system)
 {
 	bool trustGamelist = Settings::getInstance()->getBool("ParseGamelistOnly");
 	std::string xmlpath = system->getGamelistPath(false);
+	const std::vector<std::string> allowedExtensions = system->getExtensions();
 
 	if(!Utils::FileSystem::exists(xmlpath))
 		return;
@@ -122,6 +123,13 @@ void parseGamelist(SystemData* system)
 			if(!trustGamelist && !Utils::FileSystem::exists(path))
 			{
 				LOG(LogWarning) << "File \"" << path << "\" does not exist! Ignoring.";
+				continue;
+			}
+
+			// Check whether the file's extension is allowed in the system
+			if (std::find(allowedExtensions.cbegin(), allowedExtensions.cend(), Utils::FileSystem::getExtension(path)) == allowedExtensions.cend())
+			{
+				LOG(LogDebug) << "file " << path << " found in gamelist, but has unregistered extension";
 				continue;
 			}
 

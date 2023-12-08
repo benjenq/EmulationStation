@@ -1,13 +1,13 @@
 #include "views/gamelist/VideoGameListView.h"
 
 #include "animations/LambdaAnimation.h"
-#ifdef _RPI_
+#ifdef _OMX_
 #include "components/VideoPlayerComponent.h"
 #endif
 #include "components/VideoVlcComponent.h"
 #include "utils/FileSystemUtil.h"
 #include "views/ViewController.h"
-#ifdef _RPI_
+#ifdef _OMX_
 #include "Settings.h"
 #endif
 
@@ -30,7 +30,7 @@ VideoGameListView::VideoGameListView(Window* window, FileData* root) :
 	const float padding = 0.01f;
 
 	// Create the correct type of video window
-#ifdef _RPI_
+#ifdef _OMX_
 	Utils::FileSystem::removeFile(getTitlePath());
 	if (Settings::getInstance()->getBool("VideoOmxPlayer"))
 		mVideo = new VideoPlayerComponent(window, "");
@@ -80,29 +80,29 @@ VideoGameListView::VideoGameListView(Window* window, FileData* root) :
 	addChild(&mMarquee);
 
 	// metadata labels + values
-	mLblRating.setText("Rating: ");
+	mLblRating.setText(_("Rating: "));
 	addChild(&mLblRating);
 	addChild(&mRating);
-	mLblReleaseDate.setText("Released: ");
+	mLblReleaseDate.setText(_("Released: "));
 	addChild(&mLblReleaseDate);
 	addChild(&mReleaseDate);
-	mLblDeveloper.setText("Developer: ");
+	mLblDeveloper.setText(_("Developer: "));
 	addChild(&mLblDeveloper);
 	addChild(&mDeveloper);
-	mLblPublisher.setText("Publisher: ");
+	mLblPublisher.setText(_("Publisher: "));
 	addChild(&mLblPublisher);
 	addChild(&mPublisher);
-	mLblGenre.setText("Genre: ");
+	mLblGenre.setText(_("Genre: "));
 	addChild(&mLblGenre);
 	addChild(&mGenre);
-	mLblPlayers.setText("Players: ");
+	mLblPlayers.setText(_("Players: "));
 	addChild(&mLblPlayers);
 	addChild(&mPlayers);
-	mLblLastPlayed.setText("Last played: ");
+	mLblLastPlayed.setText(_("Last played: "));
 	addChild(&mLblLastPlayed);
 	mLastPlayed.setDisplayRelative(true);
 	addChild(&mLastPlayed);
-	mLblPlayCount.setText("Times played: ");
+	mLblPlayCount.setText(_("Times played: "));
 	addChild(&mLblPlayCount);
 	addChild(&mPlayCount);
 
@@ -401,4 +401,5 @@ void VideoGameListView::onShow()
 
 void VideoGameListView::onFocusLost() {
 	mDescContainer.reset();
+	mList.stopScrolling(true);
 }

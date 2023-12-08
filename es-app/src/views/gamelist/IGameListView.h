@@ -31,9 +31,11 @@ public:
 
 	virtual FileData* getCursor() = 0;
 	virtual void setCursor(FileData*) = 0;
+	virtual int getViewportTop() = 0;
+	virtual void setViewportTop(int index) = 0;
 
 	virtual bool input(InputConfig* config, Input input) override;
-	virtual void remove(FileData* game, bool deleteFile) = 0;
+	virtual void remove(FileData* game, bool deleteFile, bool refreshView=true) = 0;
 
 	virtual const char* getName() const = 0;
 	virtual void launch(FileData* game) = 0;

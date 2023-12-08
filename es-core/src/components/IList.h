@@ -58,7 +58,10 @@ public:
 	};
 
 protected:
+	struct Entry mEntry;
+
 	int mCursor;
+	int mViewportTop;
 
 	int mScrollTier;
 	int mScrollVelocity;
@@ -81,6 +84,7 @@ public:
 		mGradient(window), mTierList(tierList), mLoopType(loopType)
 	{
 		mCursor = 0;
+		mViewportTop = 0;
 		mScrollTier = 0;
 		mScrollVelocity = 0;
 		mScrollTierAccumulator = 0;
@@ -103,10 +107,16 @@ public:
 		return mScrollVelocity;
 	}
 
-	void stopScrolling()
+	void stopScrolling(bool focusLost = false)
 	{
+		if (focusLost) {
+			// force remove overlay (large two letter display in center) when user scrolls
+			// at max speed through list and then abruptly leaves the system
+			mTitleOverlayOpacity = 0;
+		}
 		listInput(0);
 		onCursorChanged(CURSOR_STOPPED);
+
 	}
 
 	void clear()
@@ -150,6 +160,16 @@ public:
 		}
 
 		return false;
+	}
+
+	void setViewportTop(int index)
+	{
+		mViewportTop = index;
+	}
+
+	int getViewportTop()
+	{
+		return mViewportTop;
 	}
 
 	// entry management

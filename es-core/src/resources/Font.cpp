@@ -526,7 +526,11 @@ std::string Font::wrapText(std::string text, float maxWidth)
 			}
 		}
 
-		if(cursor == text.length()) // arrived at end of text.
+		if(cursor == text.length() && lineWidth <= maxWidth)
+		// arrived at end of text while being in bounds of textbox
+		// second clause is mandatory for short descriptions which coincidentially
+		// ending with cursor at text end but slightly overrunning the bounding box
+		// to be wrapped on the next line, thus have to hit the else branch
 		{
 			out += text;
 			text.erase();
@@ -600,12 +604,12 @@ float Font::getNewlineStartOffset(const std::string& text, const unsigned int& c
 			return 0;
 		case ALIGN_CENTER:
 			{
-				unsigned int endChar = (unsigned int)text.find('\n', charStart);
+				size_t endChar = text.find('\n', charStart);
 				return (xLen - sizeText(text.substr(charStart, endChar != std::string::npos ? endChar - charStart : endChar)).x()) / 2.0f;
 			}
 		case ALIGN_RIGHT:
 			{
-				unsigned int endChar = (unsigned int)text.find('\n', charStart);
+				size_t endChar = text.find('\n', charStart);
 				return xLen - (sizeText(text.substr(charStart, endChar != std::string::npos ? endChar - charStart : endChar)).x());
 			}
 		default:

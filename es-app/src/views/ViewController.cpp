@@ -54,7 +54,7 @@ void ViewController::goToStart()
 			if ((*it)->getName() == requestedSystem)
 			{
 				goToGameList(*it);
-                                Scripting::fireEvent("system-select", requestedSystem, "requestedsystem");
+				Scripting::fireEvent("system-select", requestedSystem, "requestedsystem");
 				FileData* cursor = getGameListView(*it)->getCursor();
 				if (cursor != NULL)
 				{
@@ -77,7 +77,7 @@ void ViewController::goToStart()
 
 void ViewController::ReloadAndGoToStart()
 {
-	mWindow->renderLoadingScreen("Loading...");
+	mWindow->renderLoadingScreen(_("Loading..."));
 	ViewController::get()->reloadAll();
 	ViewController::get()->goToStart();
 }
@@ -193,11 +193,50 @@ void ViewController::playViewTransition()
 		}else{
 			advanceAnimation(0, (int)(mFadeOpacity * FADE_DURATION));
 		}
-	} else if (transition_style == "slide"){
+	}
+	else if (transition_style == "slide")
+	{
 		// slide or simple slide
-		setAnimation(new MoveCameraAnimation(mCamera, target));
+		bool inGamelistNav = -mCamera.translation().y() == target.y() // not in/out gamelist nav
+			&& -mCamera.translation().x() - target.x(); // left/right movement
+		cancelAnimation(0);
+		Vector3f tgt = Vector3f(target);
+		Vector3f positionOrig;
+		if (inGamelistNav) {
+			const float screenWidth = (float)Renderer::getScreenWidth();
+			if (-mCamera.translation().x() - tgt.x() >= 2 * screenWidth)
+			{
+				// right rollover
+				mLockInput = true;
+				tgt.x() = screenWidth * mGameListViews.size();
+			}
+			else if (-mCamera.translation().x() - tgt.x() <= 2 * -screenWidth)
+			{
+				// left rollover
+				mLockInput = true;
+				tgt.x() = -screenWidth;
+			}
+			// deny any further input on rollover as mCurrentView would be
+			// different on subsequent animations, resulting in restoring
+			// a unrelated mCurrentView/mCamera with the original position
+			if (mLockInput)
+			{
+				positionOrig = Vector3f(mCurrentView->getPosition());
+				mCurrentView->setPosition(tgt.x(), tgt.y());
+			}
+		}
+
+		setAnimation(new MoveCameraAnimation(mCamera, tgt), 0, [this, positionOrig] {
+			if (mLockInput) {
+				mCurrentView->setPosition(positionOrig);
+				mCamera.translation() = -positionOrig;
+			}
+			mLockInput = false;
+		});
 		updateHelpPrompts(); // update help prompts immediately
-	} else {
+	}
+	else
+	{
 		// instant
 		setAnimation(new LambdaAnimation(
 			[this, target](float /*t*/)
@@ -247,8 +286,10 @@ void ViewController::launch(FileData* game, Vector3f center)
 			game->launchGame(mWindow);
 			setAnimation(new LambdaAnimation(fadeFunc, 800), 0, [this] { mLockInput = false; }, true);
 			this->onFileChanged(game, FILE_METADATA_CHANGED);
-			if (mCurrentView)
+			if (mCurrentView) {
+				this->getGameListView(game->getSystem())->setViewportTop(-1);
 				mCurrentView->onShow();
+			}
 		});
 	} else if (transition_style == "slide"){
 		// move camera to zoom in on center + fade out, launch game, come back in
@@ -258,8 +299,10 @@ void ViewController::launch(FileData* game, Vector3f center)
 			mCamera = origCamera;
 			setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 600), 0, [this] { mLockInput = false; }, true);
 			this->onFileChanged(game, FILE_METADATA_CHANGED);
-			if (mCurrentView)
+			if (mCurrentView) {
+				this->getGameListView(game->getSystem())->setViewportTop(-1);
 				mCurrentView->onShow();
+			}
 		});
 	} else { // instant
 		setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 10), 0, [this, origCamera, center, game]
@@ -268,8 +311,10 @@ void ViewController::launch(FileData* game, Vector3f center)
 			mCamera = origCamera;
 			setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 10), 0, [this] { mLockInput = false; }, true);
 			this->onFileChanged(game, FILE_METADATA_CHANGED);
-			if (mCurrentView)
+			if (mCurrentView) {
+				this->getGameListView(game->getSystem())->setViewportTop(-1);
 				mCurrentView->onShow();
+			}
 		});
 	}
 }
@@ -451,16 +496,16 @@ void ViewController::preload()
 	int i = 1;
 	int max = SystemData::sSystemVector.size() + 1;
 
-	bool splash = Settings::getInstance()->getBool("SplashScreen") && Settings::getInstance()->getBool("SplashScreenProgress");
+	bool splash = Settings::getInstance()->getBool("SplashScreen");
 	if (splash)
-		mWindow->renderLoadingScreen("Preloading UI", (float)i / (float)max);
+		mWindow->renderLoadingScreen(_("Preloading UI"), (float)i / (float)max);
 
 	for(auto it = SystemData::sSystemVector.cbegin(); it != SystemData::sSystemVector.cend(); it++)
 	{
 		if (splash)
 		{
 			i++;
-			mWindow->renderLoadingScreen("Preloading UI", (float)i / (float)max);
+			mWindow->renderLoadingScreen(_("Preloading UI"), (float)i / (float)max);
 		}
 
 		(*it)->getIndex()->resetFilters();
@@ -477,6 +522,7 @@ void ViewController::reloadGameListView(IGameListView* view, bool reloadTheme)
 			bool isCurrent = (mCurrentView == it->second);
 			SystemData* system = it->first;
 			FileData* cursor = view->getCursor();
+			int viewportTop = view->getViewportTop();
 			mGameListViews.erase(it);
 
 			if(reloadTheme)
@@ -487,6 +533,7 @@ void ViewController::reloadGameListView(IGameListView* view, bool reloadTheme)
 			// to counter having come from a placeholder
 			if (!cursor->isPlaceHolder()) {
 				newView->setCursor(cursor);
+				newView->setViewportTop(viewportTop);
 			}
 			if(isCurrent)
 				mCurrentView = newView;
@@ -504,9 +551,11 @@ void ViewController::reloadAll()
 {
 	// clear all gamelistviews
 	std::map<SystemData*, FileData*> cursorMap;
+	std::map<SystemData*, int> viewportTopMap;
 	for(auto it = mGameListViews.cbegin(); it != mGameListViews.cend(); it++)
 	{
 		cursorMap[it->first] = it->second->getCursor();
+		viewportTopMap[it->first] = it->second->getViewportTop();
 	}
 	mGameListViews.clear();
 
@@ -517,6 +566,12 @@ void ViewController::reloadAll()
 		it->first->loadTheme();
 		it->first->getIndex()->resetFilters();
 		getGameListView(it->first)->setCursor(it->second);
+	}
+
+	// restore index of first list item on display
+	for(auto it = viewportTopMap.cbegin(); it != viewportTopMap.cend(); it++)
+	{
+		getGameListView(it->first)->setViewportTop(it->second);
 	}
 
 	// Rebuild SystemListView
@@ -548,7 +603,7 @@ std::vector<HelpPrompt> ViewController::getHelpPrompts()
 
 	prompts = mCurrentView->getHelpPrompts();
 	if(!(UIModeController::getInstance()->isUIModeKid() && Settings::getInstance()->getBool("DisableKidStartMenu")))
-		prompts.push_back(HelpPrompt("start", "menu"));
+		prompts.push_back(HelpPrompt("start", _("menu")));
 
 	return prompts;
 }

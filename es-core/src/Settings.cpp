@@ -4,7 +4,7 @@
 #include "Log.h"
 #include "Scripting.h"
 #include "platform.h"
-#include <pugixml/src/pugixml.hpp>
+#include <pugixml.hpp>
 #include <algorithm>
 #include <vector>
 
@@ -13,28 +13,27 @@ Settings* Settings::sInstance = NULL;
 // these values are NOT saved to es_settings.xml
 // since they're set through command-line arguments, and not the in-program settings menu
 std::vector<const char*> settings_dont_save {
-	{ "Debug" },
-	{ "DebugGrid" },
-	{ "DebugText" },
-	{ "DebugImage" },
-	{ "ForceKid" },
-	{ "ForceKiosk" },
-	{ "IgnoreGamelist" },
-	{ "HideConsole" },
-	{ "ShowExit" },
-	{ "ConfirmQuit" },
-	{ "SplashScreen" },
-	{ "SplashScreenProgress" },
-	{ "VSync" },
-	{ "FullscreenBorderless" },
-	{ "Windowed" },
-	{ "WindowWidth" },
-	{ "WindowHeight" },
-	{ "ScreenWidth" },
-	{ "ScreenHeight" },
-	{ "ScreenOffsetX" },
-	{ "ScreenOffsetY" },
-	{ "ScreenRotate" }
+	 "Debug" ,
+	 "DebugGrid" ,
+	 "DebugText" ,
+	 "DebugImage" ,
+	 "ForceKid" ,
+	 "ForceKiosk" ,
+	 "IgnoreGamelist" ,
+	 "HideConsole" ,
+	 "ShowExit" ,
+	 "ConfirmQuit" ,
+	 "SplashScreen" ,
+	 "VSync" ,
+	 "FullscreenBorderless" ,
+	 "Windowed" ,
+	 "WindowWidth" ,
+	 "WindowHeight" ,
+	 "ScreenWidth" ,
+	 "ScreenHeight" ,
+	 "ScreenOffsetX" ,
+	 "ScreenOffsetY" ,
+	 "ScreenRotate"
 };
 
 Settings::Settings()
@@ -65,7 +64,6 @@ void Settings::setDefaults()
 	mBoolMap["FullscreenBorderless"] = false;
 	mBoolMap["Windowed"] = false;
 	mBoolMap["SplashScreen"] = true;
-	mBoolMap["SplashScreenProgress"] = true;
 	mStringMap["StartupSystem"] = "";
 	mBoolMap["DisableKidStartMenu"] = true;
 
@@ -122,7 +120,7 @@ void Settings::setDefaults()
 	// This setting only applies to raspberry pi but set it for all platforms so
 	// we don't get a warning if we encounter it on a different platform
 	mBoolMap["VideoOmxPlayer"] = false;
-	#ifdef _RPI_
+	#ifdef _OMX_
 		// we're defaulting to OMX Player for full screen video on the Pi
 		mBoolMap["ScreenSaverOmxPlayer"] = true;
 		// use OMX Player defaults

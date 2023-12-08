@@ -7,7 +7,7 @@
 #include "PlatformId.h"
 #include "Settings.h"
 #include "SystemData.h"
-#include <pugixml/src/pugixml.hpp>
+#include <pugixml.hpp>
 #include <cstring>
 
 using namespace PlatformIds;
@@ -98,6 +98,8 @@ const std::map<PlatformId, unsigned short> screenscraper_platformid_map{
 	{ VECTREX, 102 },
 	{ TRS80_COLOR_COMPUTER, 144 },
 	{ TANDY, 144 },
+	{ TI_99, 205 },
+	{ DRAGON32, 91 },
 	{ ZMACHINE, 21 }
 };
 

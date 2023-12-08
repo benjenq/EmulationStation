@@ -5,12 +5,15 @@
 #include "utils/StringUtil.h"
 #include "PowerSaver.h"
 #include "Settings.h"
+#ifdef WIN32
+#include <basetsd.h>
+#include <codecvt>
+typedef SSIZE_T ssize_t;
+#else
+#include <unistd.h>
+#endif
 #include <vlc/vlc.h>
 #include <SDL_mutex.h>
-
-#ifdef WIN32
-#include <codecvt>
-#endif
 
 libvlc_instance_t* VideoVlcComponent::mVLC = NULL;
 
@@ -220,11 +223,7 @@ void VideoVlcComponent::handleLooping()
 		libvlc_state_t state = libvlc_media_player_get_state(mMediaPlayer);
 		if (state == libvlc_Ended)
 		{
-			if (!Settings::getInstance()->getBool("VideoAudio") ||
-				(Settings::getInstance()->getBool("ScreenSaverVideoMute") && mScreensaverMode))
-			{
-				libvlc_audio_set_mute(mMediaPlayer, 1);
-			}
+			setMuteMode();
 			//libvlc_media_player_set_position(mMediaPlayer, 0.0f);
 			libvlc_media_player_set_media(mMediaPlayer, mMedia);
 			libvlc_media_player_play(mMediaPlayer);
@@ -255,7 +254,9 @@ void VideoVlcComponent::startVideo()
 			{
 				unsigned track_count;
 				// Get the media metadata so we can find the aspect ratio
-				libvlc_media_parse(mMedia);
+				libvlc_media_parse_with_options(mMedia, libvlc_media_fetch_local, -1);
+				while (libvlc_media_get_parsed_status(mMedia) == 0)
+					;
 				libvlc_media_track_t** tracks;
 				track_count = libvlc_media_tracks_get(mMedia, &tracks);
 				for (unsigned track = 0; track < track_count; ++track)
@@ -276,7 +277,7 @@ void VideoVlcComponent::startVideo()
 					{
 						std::string resolution = Settings::getInstance()->getString("VlcScreenSaverResolution");
 						if(resolution != "original") {
-							float scale = 1;			
+							float scale = 1;
 							if (resolution == "low")
 								// 25% of screen resolution
 								scale = 0.25;
@@ -305,11 +306,7 @@ void VideoVlcComponent::startVideo()
 					// Setup the media player
 					mMediaPlayer = libvlc_media_player_new_from_media(mMedia);
 
-					if (!Settings::getInstance()->getBool("VideoAudio") ||
-						(Settings::getInstance()->getBool("ScreenSaverVideoMute") && mScreensaverMode))
-					{
-						libvlc_audio_set_mute(mMediaPlayer, 1);
-					}
+					setMuteMode();
 
 					libvlc_media_player_play(mMediaPlayer);
 					libvlc_video_set_callbacks(mMediaPlayer, lock, unlock, display, (void*)&mContext);
@@ -337,5 +334,14 @@ void VideoVlcComponent::stopVideo()
 		mMediaPlayer = NULL;
 		freeContext();
 		PowerSaver::resume();
+	}
+}
+
+void VideoVlcComponent::setMuteMode()
+{
+	Settings *cfg = Settings::getInstance();
+	if (!cfg->getBool("VideoAudio") || (cfg->getBool("ScreenSaverVideoMute") && mScreensaverMode))
+	{
+		libvlc_audio_set_mute(mMediaPlayer, 1);
 	}
 }

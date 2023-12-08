@@ -1,6 +1,6 @@
 #include "SystemScreenSaver.h"
 
-#ifdef _RPI_
+#ifdef _OMX_
 #include "components/VideoPlayerComponent.h"
 #endif
 #include "components/VideoVlcComponent.h"
@@ -64,7 +64,7 @@ bool SystemScreenSaver::isScreenSaverActive()
 
 void SystemScreenSaver::setVideoScreensaver(std::string& path)
 {
-#ifdef _RPI_
+#ifdef _OMX_
 	// Create the correct type of video component
 	if (Settings::getInstance()->getBool("ScreenSaverOmxPlayer"))
 		mVideoScreensaver = new VideoPlayerComponent(mWindow, getTitlePath());
@@ -89,9 +89,9 @@ void SystemScreenSaver::setVideoScreensaver(std::string& path)
 	mVideoScreensaver->setVideo(path);
 	mVideoScreensaver->setScreensaverMode(true);
 	mVideoScreensaver->onShow();
+
 	PowerSaver::runningScreenSaver(true);
 	mTimer = 0;
-	return;
 }
 
 void SystemScreenSaver::setImageScreensaver(std::string& path)
@@ -100,8 +100,6 @@ void SystemScreenSaver::setImageScreensaver(std::string& path)
 		{
 			mImageScreensaver = new ImageComponent(mWindow, false, false);
 		}
-
-		mTimer = 0;
 
 		mImageScreensaver->setImage(path);
 		mImageScreensaver->setOrigin(0.5f, 0.5f);
@@ -115,6 +113,9 @@ void SystemScreenSaver::setImageScreensaver(std::string& path)
 		{
 			mImageScreensaver->setMaxSize((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
 		}
+
+		PowerSaver::runningScreenSaver(true);
+		mTimer = 0;
 }
 
 bool SystemScreenSaver::isFileVideo(std::string& path)
@@ -160,7 +161,7 @@ void SystemScreenSaver::startScreenSaver()
 		if (!path.empty() && Utils::FileSystem::exists(path))
 		{
 			setVideoScreensaver(path);
-			if (mCurrentGame != NULL) 
+			if (mCurrentGame != NULL)
 			{
 				Scripting::fireEvent("screensaver-game-select", mCurrentGame->getSystem()->getName(), mCurrentGame->getPath(), mCurrentGame->getName(), "randomvideo");
 			}
@@ -199,20 +200,15 @@ void SystemScreenSaver::startScreenSaver()
 		}
 
 		std::string bg_audio_file = Settings::getInstance()->getString("SlideshowScreenSaverBackgroundAudioFile");
-		if ((!mBackgroundAudio) && (bg_audio_file != ""))
+		if (!mBackgroundAudio && bg_audio_file != "" && Utils::FileSystem::exists(bg_audio_file))
 		{
-			if (Utils::FileSystem::exists(bg_audio_file))
-			{
-				// paused PS so that the background audio keeps playing
-				PowerSaver::pause();
-				mBackgroundAudio = Sound::get(bg_audio_file);
-				mBackgroundAudio->play();
-			}
+			// paused PS so that the background audio keeps playing
+			PowerSaver::pause();
+			mBackgroundAudio = Sound::get(bg_audio_file);
+			mBackgroundAudio->play();
 		}
 
-		PowerSaver::runningScreenSaver(true);
-		mTimer = 0;
-		if (mCurrentGame != NULL) 
+		if (mCurrentGame != NULL)
 		{
 			Scripting::fireEvent("screensaver-game-select", mCurrentGame->getSystem()->getName(), mCurrentGame->getFileName(), mCurrentGame->getName(), "slideshow");
 		}
@@ -257,11 +253,9 @@ void SystemScreenSaver::stopScreenSaver()
 void SystemScreenSaver::renderScreenSaver()
 {
 	std::string screensaver_behavior = Settings::getInstance()->getString("ScreenSaverBehavior");
-	if (mVideoScreensaver && screensaver_behavior == "random video")
+	if (mVideoScreensaver && (screensaver_behavior == "random video" || screensaver_behavior == "slideshow"))
 	{
-		// Render black background
-		Renderer::setMatrix(Transform4x4f::Identity());
-		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x000000FF, 0x000000FF);
+		setBackground();
 
 		// Only render the video if the state requires it
 		if ((int)mState >= STATE_FADE_IN_VIDEO)
@@ -269,32 +263,31 @@ void SystemScreenSaver::renderScreenSaver()
 			Transform4x4f transform = Transform4x4f::Identity();
 			mVideoScreensaver->render(transform);
 		}
+
+		// Check if slideshow then loop background music
+		if (screensaver_behavior == "slideshow" && mBackgroundAudio && !mBackgroundAudio->isPlaying())
+		{
+			mBackgroundAudio->play();
+		}
+
 	}
 	else if (mImageScreensaver && screensaver_behavior == "slideshow")
 	{
-		// Render black background
-		Renderer::setMatrix(Transform4x4f::Identity());
-		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x000000FF, 0x000000FF);
+		setBackground();
 
 		// Only render the image if the state requires it
-		if ((int)mState >= STATE_FADE_IN_VIDEO)
+		if ((int)mState >= STATE_FADE_IN_VIDEO && mImageScreensaver->hasImage())
 		{
-			if (mImageScreensaver->hasImage())
-			{
-				mImageScreensaver->setOpacity(255- (unsigned char) (mOpacity * 255));
+			mImageScreensaver->setOpacity(255- (unsigned char) (mOpacity * 255));
 
-				Transform4x4f transform = Transform4x4f::Identity();
-				mImageScreensaver->render(transform);
-			}
+			Transform4x4f transform = Transform4x4f::Identity();
+			mImageScreensaver->render(transform);
 		}
 
 		// Check if we need to restart the background audio
-		if ((mBackgroundAudio) && (Settings::getInstance()->getString("SlideshowScreenSaverBackgroundAudioFile") != ""))
+		if (mBackgroundAudio && !mBackgroundAudio->isPlaying())
 		{
-			if (!mBackgroundAudio->isPlaying())
-			{
-				mBackgroundAudio->play();
-			}
+			mBackgroundAudio->play();
 		}
 	}
 	else if (mState != STATE_INACTIVE)
@@ -314,7 +307,7 @@ void SystemScreenSaver::backgroundIndexing()
 	std::vector<FileData*> files = all->getRootFolder()->getFilesRecursive(GAME);
 
 	const auto startTs = std::chrono::system_clock::now();
-	for (lastIndex; lastIndex < files.size(); lastIndex++)
+	for ( ; lastIndex < files.size(); lastIndex++)
 	{
 		if(mExit)
 			break;
@@ -511,10 +504,21 @@ void SystemScreenSaver::launchGame()
 {
 	if (mCurrentGame != NULL)
 	{
+		//Stop screensaver
+		mStopBackgroundAudio = true;
+		stopScreenSaver();
+
 		// launching Game
 		ViewController::get()->goToGameList(mCurrentGame->getSystem());
 		IGameListView* view = ViewController::get()->getGameListView(mCurrentGame->getSystem()).get();
 		view->setCursor(mCurrentGame);
 		view->launch(mCurrentGame);
 	}
+}
+
+void SystemScreenSaver::setBackground()
+{
+		// Render black background
+		Renderer::setMatrix(Transform4x4f::Identity());
+		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x000000FF, 0x000000FF);
 }

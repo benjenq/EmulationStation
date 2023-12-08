@@ -105,7 +105,7 @@ void SystemData::populateFolder(FileData* folder)
 
 		//this is a little complicated because we allow a list of extensions to be defined (delimited with a space)
 		//we first get the extension of the file itself:
-		extension = Utils::String::toLower(Utils::FileSystem::getExtension(filePath));
+		extension = Utils::FileSystem::getExtension(filePath);
 
 		//fyi, folders *can* also match the extension and be added as games - this is mostly just to support higan
 		//see issue #75: https://github.com/Aloshi/EmulationStation/issues/75
@@ -148,6 +148,9 @@ void SystemData::indexAllGameFilters(const FileData* folder)
 		{
 			case GAME:   { mFilterIndex->addToIndex(*it); } break;
 			case FOLDER: { indexAllGameFilters(*it);      } break;
+			default:
+				LOG(LogInfo) << "Unknown type: " << (*it)->getType();
+			     break;
 		}
 	}
 }
@@ -184,7 +187,7 @@ SystemData* SystemData::loadSystem(pugi::xml_node system)
 
 	for (auto extension = list.cbegin(); extension != list.cend(); extension++)
 	{
-		std::string xt = Utils::String::toLower(*extension);
+		std::string xt = std::string(*extension);
 		if (std::find(extensions.begin(), extensions.end(), xt) == extensions.end())
 			extensions.push_back(xt);
 	}
@@ -210,7 +213,9 @@ SystemData* SystemData::loadSystem(pugi::xml_node system)
 
 		// if there appears to be an actual platform ID supplied but it didn't match the list, warn
 		if (str != NULL && str[0] != '\0' && platformId == PlatformIds::PLATFORM_UNKNOWN)
+		{
 			LOG(LogWarning) << "  Unknown platform for system \"" << name << "\" (platform \"" << str << "\" from list \"" << platformList << "\")";
+		}
 		else if (platformId != PlatformIds::PLATFORM_UNKNOWN)
 			platformIds.push_back(platformId);
 	}
@@ -370,14 +375,14 @@ bool SystemData::loadConfig(Window* window)
 		delete pThreadPool;
 
 		if (window != NULL)
-			window->renderLoadingScreen("Favorites", systemCount == 0 ? 0 : currentSystem / systemCount);
+			window->renderLoadingScreen(_("Favorites"), systemCount == 0 ? 0 : currentSystem / systemCount);
 
 		CollectionSystemManager::get()->updateSystemsList();
 	}
 	else
 	{
 		if (window != NULL)
-			window->renderLoadingScreen("Favorites", systemCount == 0 ? 0 : currentSystem / systemCount);
+			window->renderLoadingScreen(_("Favorites"), systemCount == 0 ? 0 : currentSystem / systemCount);
 
 		CollectionSystemManager::get()->loadCollectionSystems();
 	}
@@ -542,6 +547,8 @@ SystemData* SystemData::getRandomSystem()
 	if (sSystemVectorShuffled.empty())
 	{
 		std::copy_if(sSystemVector.begin(), sSystemVector.end(), std::back_inserter(sSystemVectorShuffled), [](SystemData *sd){ return sd->isGameSystem(); });
+		if (sSystemVectorShuffled.empty()) return NULL;
+
 		std::shuffle(sSystemVectorShuffled.begin(), sSystemVectorShuffled.end(), sURNG);
 	}
 

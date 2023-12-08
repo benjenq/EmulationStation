@@ -6,7 +6,7 @@
 #include "platform.h"
 #include "Scripting.h"
 #include "Window.h"
-#include <pugixml/src/pugixml.hpp>
+#include <pugixml.hpp>
 #include <SDL.h>
 #include <iostream>
 #include <assert.h>
@@ -84,7 +84,8 @@ void InputManager::init()
 
 void InputManager::addJoystickByDeviceIndex(int id)
 {
-	assert(id >= 0 && id < SDL_NumJoysticks());
+	assert(id > -1);
+	assert(id < SDL_NumJoysticks());
 
 	// open joystick & add to our list
 	SDL_Joystick* joy = SDL_JoystickOpen(id);
@@ -99,11 +100,16 @@ void InputManager::addJoystickByDeviceIndex(int id)
 
 	// create the InputConfig
 	mInputConfigs[joyId] = new InputConfig(joyId, SDL_JoystickName(joy), guid);
+
+	// add Vendor and Product IDs
+	mInputConfigs[joyId]->setVendorId(SDL_JoystickGetVendor(joy));
+	mInputConfigs[joyId]->setProductId(SDL_JoystickGetProduct(joy));
+
 	if(!loadInputConfig(mInputConfigs[joyId]))
 	{
-		LOG(LogInfo) << "Added unconfigured joystick " << SDL_JoystickName(joy) << " (GUID: " << guid << ", instance ID: " << joyId << ", device index: " << id << ").";
+		LOG(LogInfo) << "Added unconfigured joystick '" << SDL_JoystickName(joy) << "' (GUID: " << guid << ", instance ID: " << joyId << ", device index: " << id << ").";
 	}else{
-		LOG(LogInfo) << "Added known joystick " << SDL_JoystickName(joy) << " (instance ID: " << joyId << ", device index: " << id << ")";
+		LOG(LogInfo) << "Added known joystick '" << SDL_JoystickName(joy) << "' (instance ID: " << joyId << ", device index: " << id << ")";
 	}
 
 	// set up the prevAxisValues
@@ -128,13 +134,9 @@ void InputManager::removeJoystickByJoystickID(SDL_JoystickID joyId)
 
 	// close the joystick
 	auto joyIt = mJoysticks.find(joyId);
-	if(joyIt != mJoysticks.cend())
-	{
-		SDL_JoystickClose(joyIt->second);
-		mJoysticks.erase(joyIt);
-	}else{
-		LOG(LogError) << "Could not find joystick to close (instance ID: " << joyId << ")";
-	}
+	LOG(LogInfo) << "Removed joystick '" << SDL_JoystickName(joyIt->second) << "' (instance ID: " << joyId << ")";
+	SDL_JoystickClose(joyIt->second);
+	mJoysticks.erase(joyIt);
 }
 
 void InputManager::deinit()
@@ -369,7 +371,6 @@ void InputManager::writeDeviceConfig(InputConfig* config)
 					path = getTemporaryConfigPath();
 					doc.reset();
 					root = doc.append_child("inputList");
-					root.append_copy(actionnode);
 				}
 				else
 				{

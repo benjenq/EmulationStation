@@ -3,40 +3,41 @@
 #include "utils/StringUtil.h"
 #include "Settings.h"
 #include "Log.h"
+#include "Locale.h"
 
 namespace FileSorts
 {
 
 	const FileData::SortType typesArr[] = {
-		FileData::SortType(&compareName, true, "filename, ascending"),
-		FileData::SortType(&compareName, false, "filename, descending"),
+		FileData::SortType(&compareName, true, N_("name, ascending")),
+		FileData::SortType(&compareName, false, N_("name, descending")),
 
-		FileData::SortType(&compareRating, true, "rating, ascending"),
-		FileData::SortType(&compareRating, false, "rating, descending"),
+		FileData::SortType(&compareRating, true, N_("rating, ascending")),
+		FileData::SortType(&compareRating, false, N_("rating, descending")),
 
-		FileData::SortType(&compareTimesPlayed, true, "times played, ascending"),
-		FileData::SortType(&compareTimesPlayed, false, "times played, descending"),
+		FileData::SortType(&compareTimesPlayed, true, N_("times played, ascending")),
+		FileData::SortType(&compareTimesPlayed, false, N_("times played, descending")),
 
-		FileData::SortType(&compareLastPlayed, true, "last played, ascending"),
-		FileData::SortType(&compareLastPlayed, false, "last played, descending"),
+		FileData::SortType(&compareLastPlayed, true, N_("last played, ascending")),
+		FileData::SortType(&compareLastPlayed, false, N_("last played, descending")),
 
-		FileData::SortType(&compareNumPlayers, true, "number players, ascending"),
-		FileData::SortType(&compareNumPlayers, false, "number players, descending"),
+		FileData::SortType(&compareNumPlayers, true, N_("number players, ascending")),
+		FileData::SortType(&compareNumPlayers, false, N_("number players, descending")),
 
-		FileData::SortType(&compareReleaseDate, true, "release date, ascending"),
-		FileData::SortType(&compareReleaseDate, false, "release date, descending"),
+		FileData::SortType(&compareReleaseDate, true, N_("release date, ascending")),
+		FileData::SortType(&compareReleaseDate, false, N_("release date, descending")),
 
-		FileData::SortType(&compareGenre, true, "genre, ascending"),
-		FileData::SortType(&compareGenre, false, "genre, descending"),
+		FileData::SortType(&compareGenre, true, N_("genre, ascending")),
+		FileData::SortType(&compareGenre, false, N_("genre, descending")),
 
-		FileData::SortType(&compareDeveloper, true, "developer, ascending"),
-		FileData::SortType(&compareDeveloper, false, "developer, descending"),
+		FileData::SortType(&compareDeveloper, true, N_("developer, ascending")),
+		FileData::SortType(&compareDeveloper, false, N_("developer, descending")),
 
-		FileData::SortType(&comparePublisher, true, "publisher, ascending"),
-		FileData::SortType(&comparePublisher, false, "publisher, descending"),
+		FileData::SortType(&comparePublisher, true, N_("publisher, ascending")),
+		FileData::SortType(&comparePublisher, false, N_("publisher, descending")),
 
-		FileData::SortType(&compareSystem, true, "system, ascending"),
-		FileData::SortType(&compareSystem, false, "system, descending")
+		FileData::SortType(&compareSystem, true, N_("system, ascending")),
+		FileData::SortType(&compareSystem, false, N_("system, descending"))
 	};
 
 	const std::vector<FileData::SortType> SortTypes(typesArr, typesArr + sizeof(typesArr)/sizeof(typesArr[0]));

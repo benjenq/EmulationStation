@@ -6,7 +6,7 @@
 #include "CollectionSystemManager.h"
 #include "Settings.h"
 #include "SystemData.h"
-#ifdef _RPI_
+#ifdef _OMX_
 #include "components/VideoPlayerComponent.h"
 #endif
 #include "components/VideoVlcComponent.h"
@@ -29,7 +29,7 @@ GridGameListView::GridGameListView(Window* window, FileData* root) :
 	const float padding = 0.01f;
 
 // Create the correct type of video window
-#ifdef _RPI_
+#ifdef _OMX_
 	if (Settings::getInstance()->getBool("VideoOmxPlayer"))
 		mVideo = new VideoPlayerComponent(window, "");
 	else
@@ -46,29 +46,29 @@ GridGameListView::GridGameListView(Window* window, FileData* root) :
 	populateList(root->getChildrenListToDisplay());
 
 	// metadata labels + values
-	mLblRating.setText("Rating: ");
+	mLblRating.setText(_("Rating: "));
 	addChild(&mLblRating);
 	addChild(&mRating);
-	mLblReleaseDate.setText("Released: ");
+	mLblReleaseDate.setText(_("Released: "));
 	addChild(&mLblReleaseDate);
 	addChild(&mReleaseDate);
-	mLblDeveloper.setText("Developer: ");
+	mLblDeveloper.setText(_("Developer: "));
 	addChild(&mLblDeveloper);
 	addChild(&mDeveloper);
-	mLblPublisher.setText("Publisher: ");
+	mLblPublisher.setText(_("Publisher: "));
 	addChild(&mLblPublisher);
 	addChild(&mPublisher);
-	mLblGenre.setText("Genre: ");
+	mLblGenre.setText(_("Genre: "));
 	addChild(&mLblGenre);
 	addChild(&mGenre);
-	mLblPlayers.setText("Players: ");
+	mLblPlayers.setText(_("Players: "));
 	addChild(&mLblPlayers);
 	addChild(&mPlayers);
-	mLblLastPlayed.setText("Last played: ");
+	mLblLastPlayed.setText(_("Last played: "));
 	addChild(&mLblLastPlayed);
 	mLastPlayed.setDisplayRelative(true);
 	addChild(&mLastPlayed);
-	mLblPlayCount.setText("Times played: ");
+	mLblPlayCount.setText(_("Times played: "));
 	addChild(&mLblPlayCount);
 	addChild(&mPlayCount);
 
@@ -411,7 +411,7 @@ void GridGameListView::launch(FileData* game)
 
 }
 
-void GridGameListView::remove(FileData *game, bool deleteFile)
+void GridGameListView::remove(FileData *game, bool deleteFile, bool refreshView)
 {
 	if (deleteFile)
 		Utils::FileSystem::removeFile(game->getPath());  // actually delete the file on the filesystem
@@ -437,7 +437,9 @@ void GridGameListView::remove(FileData *game, bool deleteFile)
 		addPlaceholder();
 	}
 	delete game;                                 // remove before repopulating (removes from parent)
-	onFileChanged(parent, FILE_REMOVED);           // update the view, with game removed
+
+	if(refreshView)
+		onFileChanged(parent, FILE_REMOVED);     // update the view, with game removed
 }
 
 std::vector<TextComponent*> GridGameListView::getMDLabels()
@@ -473,14 +475,14 @@ std::vector<HelpPrompt> GridGameListView::getHelpPrompts()
 	std::vector<HelpPrompt> prompts;
 
 	if(Settings::getInstance()->getBool("QuickSystemSelect"))
-		prompts.push_back(HelpPrompt("lr", "system"));
-	prompts.push_back(HelpPrompt("up/down/left/right", "choose"));
-	prompts.push_back(HelpPrompt("a", "launch"));
-	prompts.push_back(HelpPrompt("b", "back"));
+		prompts.push_back(HelpPrompt("lr", _("system")));
+	prompts.push_back(HelpPrompt("up/down/left/right", _("choose")));
+	prompts.push_back(HelpPrompt("a", _("launch")));
+	prompts.push_back(HelpPrompt("b", _("back")));
 	if(!UIModeController::getInstance()->isUIModeKid())
-		prompts.push_back(HelpPrompt("select", "options"));
+		prompts.push_back(HelpPrompt("select", _("options")));
 	if(mRoot->getSystem()->isGameSystem())
-		prompts.push_back(HelpPrompt("x", "random"));
+		prompts.push_back(HelpPrompt("x", _("random")));
 	if(mRoot->getSystem()->isGameSystem() && !UIModeController::getInstance()->isUIModeKid())
 	{
 		std::string prompt = CollectionSystemManager::get()->getEditingCollection();

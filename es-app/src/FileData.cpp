@@ -7,6 +7,7 @@
 #include "CollectionSystemManager.h"
 #include "FileFilterIndex.h"
 #include "FileSorts.h"
+#include "InputManager.h"
 #include "Log.h"
 #include "MameNames.h"
 #include "platform.h"
@@ -249,21 +250,30 @@ void FileData::removeChild(FileData* file)
 
 void FileData::sort(ComparisonFunction& comparator, bool ascending)
 {
-	std::stable_sort(mChildren.begin(), mChildren.end(), comparator);
-
-	for(auto it = mChildren.cbegin(); it != mChildren.cend(); it++)
+	if (ascending)
 	{
-		if((*it)->getChildren().size() > 0)
-			(*it)->sort(comparator, ascending);
+		std::stable_sort(mChildren.begin(), mChildren.end(), comparator);
+		for(auto it = mChildren.cbegin(); it != mChildren.cend(); it++)
+		{
+			if((*it)->getChildren().size() > 0)
+				(*it)->sort(comparator, ascending);
+		}
 	}
-
-	if(!ascending)
-		std::reverse(mChildren.begin(), mChildren.end());
+	else
+	{
+		std::stable_sort(mChildren.rbegin(), mChildren.rend(), comparator);
+		for(auto it = mChildren.rbegin(); it != mChildren.rend(); it++)
+		{
+			if((*it)->getChildren().size() > 0)
+				(*it)->sort(comparator, ascending);
+		}
+	}
 }
 
 void FileData::sort(const SortType& type)
 {
 	sort(*type.comparisonFunction, type.ascending);
+	mSortDesc = type.description;
 }
 
 void FileData::launchGame(Window* window)
@@ -272,6 +282,7 @@ void FileData::launchGame(Window* window)
 
 	AudioManager::getInstance()->deinit();
 	VolumeControl::getInstance()->deinit();
+	InputManager::getInstance()->deinit();
 	window->deinit();
 
 	std::string command = mEnvData->mLaunchCommand;
@@ -298,6 +309,7 @@ void FileData::launchGame(Window* window)
 	Scripting::fireEvent("game-end");
 
 	window->init();
+	InputManager::getInstance()->init();
 	VolumeControl::getInstance()->init();
 	window->normalizeNextUpdate();
 
@@ -374,6 +386,6 @@ FileData::SortType getSortTypeFromString(std::string desc) {
 			return sort;
 		}
 	}
-	// if not found default to name, ascending
+	// if not found default to "name, ascending"
 	return FileSorts::SortTypes.at(0);
 }

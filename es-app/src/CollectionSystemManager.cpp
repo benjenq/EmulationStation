@@ -12,7 +12,7 @@
 #include "Settings.h"
 #include "SystemData.h"
 #include "ThemeData.h"
-#include <pugixml/src/pugixml.hpp>
+#include <pugixml.hpp>
 #include <fstream>
 
 std::string myCollectionsName = "collections";
@@ -27,10 +27,10 @@ CollectionSystemManager::CollectionSystemManager(Window* window) : mWindow(windo
 {
 	CollectionSystemDecl systemDecls[] = {
 		//type                  name            long name            //default sort              // theme folder            // isCustom
-		{ AUTO_ALL_GAMES,       "all",          "all games",         "filename, ascending",      "auto-allgames",           false },
+		{ AUTO_ALL_GAMES,       "all",          "all games",         "name, ascending",          "auto-allgames",           false },
 		{ AUTO_LAST_PLAYED,     "recent",       "last played",       "last played, descending",  "auto-lastplayed",         false },
-		{ AUTO_FAVORITES,       "favorites",    "favorites",         "filename, ascending",      "auto-favorites",          false },
-		{ CUSTOM_COLLECTION,    myCollectionsName,  "collections",    "filename, ascending",      "custom-collections",      true }
+		{ AUTO_FAVORITES,       "favorites",    "favorites",         "name, ascending",          "auto-favorites",          false },
+		{ CUSTOM_COLLECTION,    myCollectionsName,  "collections",   "name, ascending",          "custom-collections",      true }
 	};
 
 	// create a map
@@ -56,7 +56,7 @@ CollectionSystemManager::CollectionSystemManager(Window* window) : mWindow(windo
 		Utils::FileSystem::createDirectory(path);
 
 	mIsEditingCustom = false;
-	mEditingCollection = "Favorites";
+	mEditingCollection = _("Favorites");
 	mEditingCollectionSystemData = NULL;
 	mCustomCollectionsBundle = NULL;
 }
@@ -260,7 +260,7 @@ void CollectionSystemManager::updateCollectionSystem(FileData* file, CollectionS
 			// found and we are removing
 			if (name == "favorites" && file->metadata.get("favorite") == "false") {
 				// need to check if still marked as favorite, if not remove
-				ViewController::get()->getGameListView(curSys).get()->remove(collectionEntry, false);
+				ViewController::get()->getGameListView(curSys).get()->remove(collectionEntry, false, true);
 			}
 			else
 			{
@@ -298,8 +298,9 @@ void CollectionSystemManager::trimCollectionCount(FileData* rootFolder, int limi
 	while ((int)rootFolder->getChildrenListToDisplay().size() > limit)
 	{
 		CollectionFileData* gameToRemove = (CollectionFileData*)rootFolder->getChildrenListToDisplay().back();
-		ViewController::get()->getGameListView(curSys).get()->remove(gameToRemove, false);
+		ViewController::get()->getGameListView(curSys).get()->remove(gameToRemove, false, false);
 	}
+	ViewController::get()->onFileChanged(rootFolder, FILE_REMOVED);
 }
 
 // deletes all collection files from collection systems related to the source file
@@ -323,7 +324,7 @@ void CollectionSystemManager::deleteCollectionFiles(FileData* file)
 				sysDataIt->second.needsSave = true;
 				FileData* collectionEntry = children.at(key);
 				SystemData* systemViewToUpdate = getSystemToView(sysDataIt->second.system);
-				ViewController::get()->getGameListView(systemViewToUpdate).get()->remove(collectionEntry, false);
+				ViewController::get()->getGameListView(systemViewToUpdate).get()->remove(collectionEntry, false, true);
 			}
 		}
 	}
@@ -441,16 +442,20 @@ void CollectionSystemManager::setEditMode(std::string collectionName)
 	// if it's bundled, this needs to be the bundle system
 	mEditingCollectionSystemData = sysData;
 
-	GuiInfoPopup* s = new GuiInfoPopup(mWindow, "Editing the '" + Utils::String::toUpper(collectionName) + "' Collection. Add/remove games with Y.", 10000);
+	std::string popup = (boost::locale::format(_("Editing the '{1}' Collection. Add/remove games with Y."))
+			    % Utils::String::toUpper(collectionName)).str();
+	GuiInfoPopup* s = new GuiInfoPopup(mWindow, popup, 10000);
 	mWindow->setInfoPopup(s);
 }
 
 void CollectionSystemManager::exitEditMode()
 {
-	GuiInfoPopup* s = new GuiInfoPopup(mWindow, "Finished editing the '" + mEditingCollection + "' Collection.", 4000);
+	std::string popup = (boost::locale::format(_("Finished editing the '{1}' Collection."))
+			    % mEditingCollection).str();
+	GuiInfoPopup* s = new GuiInfoPopup(mWindow, popup, 4000);
 	mWindow->setInfoPopup(s);
 	mIsEditingCustom = false;
-	mEditingCollection = "Favorites";
+	mEditingCollection = _("Favorites");
 
 	mEditingCollectionSystemData->system->onMetaDataSavePoint();
 }
@@ -495,7 +500,7 @@ bool CollectionSystemManager::toggleGameInCollection(FileData* file, int pressco
 				{
 					systemViewToUpdate->getIndex()->removeFromIndex(collectionEntry);
 				}
-				ViewController::get()->getGameListView(systemViewToUpdate).get()->remove(collectionEntry, false);
+				ViewController::get()->getGameListView(systemViewToUpdate).get()->remove(collectionEntry, false, true);
 			}
 			else
 			{
@@ -537,14 +542,14 @@ bool CollectionSystemManager::toggleGameInCollection(FileData* file, int pressco
 
 			refreshCollectionSystems(file->getSourceFileData());
 		}
+		std::string message;
 		if (adding)
-		{
-			s = new GuiInfoPopup(mWindow, "Added '" + Utils::String::removeParenthesis(name) + "' to '" + Utils::String::toUpper(sysName) + "'", 4000);
-		}
+			message = (boost::locale::format(_("Added '{1}' to '{2}'"))
+			    % Utils::String::removeParenthesis(name) % Utils::String::toUpper(sysName)).str();
 		else
-		{
-			s = new GuiInfoPopup(mWindow, "Removed '" + Utils::String::removeParenthesis(name) + "' from '" + Utils::String::toUpper(sysName) + "'", 4000);
-		}
+			message = (boost::locale::format(_("Removed '{1}' from '{2}'"))
+			    % Utils::String::removeParenthesis(name) % Utils::String::toUpper(sysName)).str();
+		s = new GuiInfoPopup(mWindow, message, 4000);
 		mWindow->setInfoPopup(s);
 		return true;
 	}
@@ -736,6 +741,10 @@ void CollectionSystemManager::populateAutoCollection(CollectionSystemData* sysDa
 						// we may still want to add files we don't want in auto collections in "favorites"
 						include = (*gameIt)->metadata.get("favorite") == "true";
 						break;
+					default:
+						// No-op to prevent compiler warnings
+						// Getting here means that the file is not part of a pre-defined collection.
+						break;
 				}
 
 				if (include) {
@@ -813,16 +822,19 @@ void CollectionSystemManager::removeCollectionsFromDisplayedSystems()
 
 	// remove all custom collections in bundle
 	// this should not delete the objects from memory!
-	FileData* customRoot = mCustomCollectionsBundle->getRootFolder();
-	std::vector<FileData*> mChildren = customRoot->getChildren();
-	for(auto it = mChildren.cbegin(); it != mChildren.cend(); it++)
+	if (mCustomCollectionsBundle)
 	{
-		customRoot->removeChild(*it);
+		FileData* customRoot = mCustomCollectionsBundle->getRootFolder();
+		std::vector<FileData*> mChildren = customRoot->getChildren();
+		for(auto it = mChildren.cbegin(); it != mChildren.cend(); it++)
+		{
+			customRoot->removeChild(*it);
+		}
+		// clear index
+		mCustomCollectionsBundle->getIndex()->resetIndex();
+		// remove view so it's re-created as needed
+		ViewController::get()->removeGameListView(mCustomCollectionsBundle);
 	}
-	// clear index
-	mCustomCollectionsBundle->getIndex()->resetIndex();
-	// remove view so it's re-created as needed
-	ViewController::get()->removeGameListView(mCustomCollectionsBundle);
 }
 
 void CollectionSystemManager::addEnabledCollectionsToDisplayedSystems(std::map<std::string, CollectionSystemData>* colSystemData)
